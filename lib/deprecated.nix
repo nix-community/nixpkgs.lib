@@ -29,7 +29,6 @@ rec {
                           } ));
 	withStdOverrides = base // {
 	   override = base.passthru.function;
-	   deepOverride = a : (base.passthru.function ((lib.mapAttrs (lib.deepOverrider a) base.passthru.args) // a));
 	   } ;
         in
 	withStdOverrides;
@@ -202,8 +201,6 @@ rec {
             work (tail list ++ operator x) ([key] ++ doneKeys) ([x] ++ result);
     in
       work startSet [] [];
-
-  genericClosure = builtins.genericClosure or lazyGenericClosure;
 
   innerModifySumArgs = f: x: a: b: if b == null then (f a b) // x else 
         innerModifySumArgs f x (a // b);
