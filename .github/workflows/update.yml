@@ -1,0 +1,57 @@
+name: Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * SUN' # every sunday
+
+jobs:
+  update:
+    name: Pull in latest lib from Nixpkgs
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Procure Nix
+      uses: cachix/install-nix-action@v13
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: master
+        path: nixpkgs-lib
+    
+    - name: Checkout nixpkgs repo
+      uses: actions/checkout@v2
+      with:
+        ref: master
+        repository: NixOS/nixpkgs
+        path: nixpkgs
+        fetch-depth: 0 # complete history
+
+    - name: Procure git-filter-repo from nixpkgs
+      run: "nix-env -i git-filter-repo -f '<nixpkgs>'"
+
+
+    - name: Filter nixpkgs on ./lib
+      run: |
+        cd ./nixpkgs
+        git filter-repo --path lib --force
+
+    - name: Update nixpkgs.lib
+      run: |
+        cd ./nixpkgs-lib
+        git remote add other ../nixpkgs/
+        git fetch other master
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git merge -X theirs --allow-unrelated-histories other/master
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        directory: nixpkgs-lib
+        branch: master
+
