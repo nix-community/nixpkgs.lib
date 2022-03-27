@@ -282,11 +282,11 @@ rec {
       # Like unifyModuleSyntax, but also imports paths and calls functions if necessary
       loadModule = args: fallbackFile: fallbackKey: m:
         if isFunction m || isAttrs m then
-          unifyModuleSyntax fallbackFile fallbackKey (applyIfFunction fallbackKey m args)
+          unifyModuleSyntax fallbackFile fallbackKey (applyModuleArgsIfFunction fallbackKey m args)
         else if isList m then
           let defs = [{ file = fallbackFile; value = m; }]; in
           throw "Module imports can't be nested lists. Perhaps you meant to remove one level of lists? Definitions: ${showDefs defs}"
-        else unifyModuleSyntax (toString m) (toString m) (applyIfFunction (toString m) (import m) args);
+        else unifyModuleSyntax (toString m) (toString m) (applyModuleArgsIfFunction (toString m) (import m) args);
 
       /*
       Collects all modules recursively into the form
@@ -383,7 +383,7 @@ rec {
         config = addFreeformType (addMeta (removeAttrs m ["_file" "key" "disabledModules" "require" "imports" "freeformType"]));
       };
 
-  applyIfFunction = key: f: args@{ config, options, lib, ... }: if isFunction f then
+  applyModuleArgsIfFunction = key: f: args@{ config, options, lib, ... }: if isFunction f then
     let
       # Module arguments are resolved in a strict manner when attribute set
       # deconstruction is used.  As the arguments are now defined with the
@@ -609,17 +609,9 @@ rec {
         throw "The option `${showOption loc}' in `${opt._file}' is already declared in ${showFiles res.declarations}."
       else
         let
-          /* Add the modules of the current option to the list of modules
-             already collected.  The options attribute except either a list of
-             submodules or a submodule. For each submodule, we add the file of the
-             current option declaration as the file use for the submodule.  If the
-             submodule defines any filename, then we ignore the enclosing option file. */
-          options' = toList opt.options.options;
-
           getSubModules = opt.options.type.getSubModules or null;
           submodules =
             if getSubModules != null then map (setDefaultModuleLocation opt._file) getSubModules ++ res.options
-            else if opt.options ? options then map (coerceOption opt._file) options' ++ res.options
             else res.options;
         in opt.options // res //
           { declarations = res.declarations ++ [opt._file];
@@ -802,27 +794,13 @@ rec {
       compare = a: b: (a.priority or 1000) < (b.priority or 1000);
     in sort compare defs';
 
+  # This calls substSubModules, whose entire purpose is only to ensure that
+  # option declarations in submodules have accurate position information.
+  # TODO: Merge this into mergeOptionDecls
   fixupOptionType = loc: opt:
-    let
-      options = opt.options or
-        (throw "Option `${showOption loc}' has type optionSet but has no option attribute, in ${showFiles opt.declarations}.");
-
-      # Hack for backward compatibility: convert options of type
-      # optionSet to options of type submodule.  FIXME: remove
-      # eventually.
-      f = tp:
-        if tp.name == "option set" || tp.name == "submodule" then
-          throw "The option ${showOption loc} uses submodules without a wrapping type, in ${showFiles opt.declarations}."
-        else if (tp.functor.wrapped.name or null) == "optionSet" then
-          if tp.name == "attrsOf" then types.attrsOf (types.submodule options)
-          else if tp.name == "listOf" then types.listOf  (types.submodule options)
-          else if tp.name == "nullOr" then types.nullOr  (types.submodule options)
-          else tp
-        else tp;
-    in
-      if opt.type.getSubModules or null == null
-      then opt // { type = f (opt.type or types.unspecified); }
-      else opt // { type = opt.type.substSubModules opt.options; options = []; };
+    if opt.type.getSubModules or null == null
+    then opt // { type = opt.type or types.unspecified; }
+    else opt // { type = opt.type.substSubModules opt.options; options = []; };
 
 
   /* Properties. */
@@ -952,6 +930,26 @@ rec {
     visible = false;
     warn = true;
     use = builtins.trace "Obsolete option `${showOption from}' is used. It was renamed to `${showOption to}'.";
+  };
+
+  mkRenamedOptionModuleWith = {
+    /* Old option path as list of strings. */
+    from,
+    /* New option path as list of strings. */
+    to,
+
+    /*
+      Release number of the first release that contains the rename, ignoring backports.
+      Set it to the upcoming release, matching the nixpkgs/.version file.
+    */
+    sinceRelease,
+
+  }: doRename {
+    inherit from to;
+    visible = false;
+    warn = lib.isInOldestRelease sinceRelease;
+    use = lib.warnIf (lib.isInOldestRelease sinceRelease)
+      "Obsolete option `${showOption from}' is used. It was renamed to `${showOption to}'.";
   };
 
   /* Return a module that causes a warning to be shown if any of the "from"
