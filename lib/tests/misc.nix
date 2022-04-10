@@ -471,6 +471,66 @@ runTests {
     '';
   };
 
+  testToINIWithGlobalSectionEmpty = {
+    expr = generators.toINIWithGlobalSection {} {
+      globalSection = {
+      };
+      sections = {
+      };
+    };
+    expected = ''
+    '';
+  };
+
+  testToINIWithGlobalSectionGlobalEmptyIsTheSameAsToINI =
+    let
+      sections = {
+        "section 1" = {
+          attribute1 = 5;
+          x = "Me-se JarJar Binx";
+        };
+        "foo" = {
+          "he\\h=he" = "this is okay";
+        };
+      };
+    in {
+      expr =
+        generators.toINIWithGlobalSection {} {
+            globalSection = {};
+            sections = sections;
+        };
+      expected = generators.toINI {} sections;
+  };
+
+  testToINIWithGlobalSectionFull = {
+    expr = generators.toINIWithGlobalSection {} {
+      globalSection = {
+        foo = "bar";
+        test = false;
+      };
+      sections = {
+        "section 1" = {
+          attribute1 = 5;
+          x = "Me-se JarJar Binx";
+        };
+        "foo" = {
+          "he\\h=he" = "this is okay";
+        };
+      };
+    };
+    expected = ''
+      foo=bar
+      test=false
+
+      [foo]
+      he\h\=he=this is okay
+
+      [section 1]
+      attribute1=5
+      x=Me-se JarJar Binx
+    '';
+  };
+
   /* right now only invocation check */
   testToJSONSimple =
     let val = {
@@ -649,6 +709,11 @@ runTests {
     expected = "foo";
   };
 
+  testSanitizeDerivationNameUnicode = testSanitizeDerivationName {
+    name = "fö";
+    expected = "f-";
+  };
+
   testSanitizeDerivationNameAscii = testSanitizeDerivationName {
     name = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
     expected = "-+--.-0123456789-=-?-ABCDEFGHIJKLMNOPQRSTUVWXYZ-_-abcdefghijklmnopqrstuvwxyz-";
@@ -691,7 +756,7 @@ runTests {
 
         locs = filter (o: ! o.internal) (optionAttrSetToDocList options);
       in map (o: o.loc) locs;
-    expected = [ [ "foo" ] [ "foo" "<name>" "bar" ] [ "foo" "bar" ] ];
+    expected = [ [ "_module" "args" ] [ "foo" ] [ "foo" "<name>" "bar" ] [ "foo" "bar" ] ];
   };
 
   testCartesianProductOfEmptySet = {
