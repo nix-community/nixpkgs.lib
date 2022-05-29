@@ -79,8 +79,6 @@ rec {
     useLLVM = true;
   };
 
-  scaleway-c1 = armv7l-hf-multiplatform // platforms.scaleway-c1;
-
   pogoplug4 = {
     config = "armv5tel-unknown-linux-gnueabi";
   } // platforms.pogoplug4;
@@ -142,6 +140,11 @@ rec {
 
   mmix = {
     config = "mmix-unknown-mmixware";
+    libc = "newlib";
+  };
+
+  rx-embedded = {
+    config = "rx-none-elf";
     libc = "newlib";
   };
 
