@@ -539,6 +539,36 @@ rec {
       modules = toList modules;
     };
 
+    # A module to be imported in some other part of the configuration.
+    deferredModule = deferredModuleWith { };
+
+    # A module to be imported in some other part of the configuration.
+    # `staticModules`' options will be added to the documentation, unlike
+    # options declared via `config`.
+    deferredModuleWith = attrs@{ staticModules ? [] }: mkOptionType {
+      name = "deferredModule";
+      description = "module";
+      check = x: isAttrs x || isFunction x || path.check x;
+      merge = loc: defs: {
+        imports = staticModules ++ map (def: lib.setDefaultModuleLocation "${def.file}, via option ${showOption loc}" def.value) defs;
+      };
+      inherit (submoduleWith { modules = staticModules; })
+        getSubOptions
+        getSubModules;
+      substSubModules = m: deferredModuleWith (attrs // {
+        staticModules = m;
+      });
+      functor = defaultFunctor "deferredModuleWith" // {
+        type = types.deferredModuleWith;
+        payload = {
+          inherit staticModules;
+        };
+        binOp = lhs: rhs: {
+          staticModules = lhs.staticModules ++ rhs.staticModules;
+        };
+      };
+    };
+
     # The type of a type!
     optionType = mkOptionType {
       name = "optionType";
@@ -571,28 +601,14 @@ rec {
       , specialArgs ? {}
       , shorthandOnlyDefinesConfig ? false
       , description ? null
-
-        # Internal variable to avoid `_key` collisions regardless
-        # of `extendModules`. Wired through by `evalModules`.
-        # Test case: lib/tests/modules, "168767"
-      , extensionOffset ? 0
       }@attrs:
       let
         inherit (lib.modules) evalModules;
 
-        shorthandToModule = if shorthandOnlyDefinesConfig == false
-          then value: value
-          else value: { config = value; };
-
-        allModules = defs: imap1 (n: { value, file }:
-          if isFunction value
-          then setFunctionArgs
-                (args: lib.modules.unifyModuleSyntax file "${toString file}-${toString (n + extensionOffset)}" (value args))
-                (functionArgs value)
-          else if isAttrs value
-          then
-            lib.modules.unifyModuleSyntax file "${toString file}-${toString (n + extensionOffset)}" (shorthandToModule value)
-          else value
+        allModules = defs: map ({ value, file }:
+          if isAttrs value && shorthandOnlyDefinesConfig
+          then { _file = file; config = value; }
+          else { _file = file; imports = [ value ]; }
         ) defs;
 
         base = evalModules {
@@ -632,7 +648,6 @@ rec {
           (base.extendModules {
             modules = [ { _module.args.name = last loc; } ] ++ allModules defs;
             prefix = loc;
-            extensionOffset = extensionOffset + length defs;
           }).config;
         emptyValue = { value = {}; };
         getSubOptions = prefix: (base.extendModules
