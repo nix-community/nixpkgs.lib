@@ -328,7 +328,7 @@ rec {
        escape ["(" ")"] "(foo)"
        => "\\(foo\\)"
   */
-  escape = list: replaceChars list (map (c: "\\${c}") list);
+  escape = list: replaceStrings list (map (c: "\\${c}") list);
 
   /* Escape occurence of the element of `list` in `string` by
      converting to its ASCII value and prefixing it with \\x.
@@ -341,7 +341,7 @@ rec {
        => "foo\\x20bar"
 
   */
-  escapeC = list: replaceChars list (map (c: "\\x${ toLower (lib.toHexString (charToInt c))}") list);
+  escapeC = list: replaceStrings list (map (c: "\\x${ toLower (lib.toHexString (charToInt c))}") list);
 
   /* Quote string to be used safely within the Bourne shell.
 
@@ -471,19 +471,8 @@ rec {
     ["\"" "'" "<" ">" "&"]
     ["&quot;" "&apos;" "&lt;" "&gt;" "&amp;"];
 
-  # Obsolete - use replaceStrings instead.
-  replaceChars = builtins.replaceStrings or (
-    del: new: s:
-    let
-      substList = lib.zipLists del new;
-      subst = c:
-        let found = lib.findFirst (sub: sub.fst == c) null substList; in
-        if found == null then
-          c
-        else
-          found.snd;
-    in
-      stringAsChars subst s);
+  # warning added 12-12-2022
+  replaceChars = lib.warn "replaceChars is a deprecated alias of replaceStrings, replace usages of it with replaceStrings." builtins.replaceStrings;
 
   # Case conversion utilities.
   lowerChars = stringToCharacters "abcdefghijklmnopqrstuvwxyz";
@@ -497,7 +486,7 @@ rec {
        toLower "HOME"
        => "home"
   */
-  toLower = replaceChars upperChars lowerChars;
+  toLower = replaceStrings upperChars lowerChars;
 
   /* Converts an ASCII string to upper-case.
 
@@ -507,7 +496,7 @@ rec {
        toUpper "home"
        => "HOME"
   */
-  toUpper = replaceChars lowerChars upperChars;
+  toUpper = replaceStrings lowerChars upperChars;
 
   /* Appends string context from another string.  This is an implementation
      detail of Nix and should be used carefully.
@@ -860,9 +849,9 @@ rec {
   */
   toInt = str:
     let
-      # RegEx: Match any leading whitespace, then any digits, and finally match any trailing
-      # whitespace.
-      strippedInput = match "[[:space:]]*([[:digit:]]+)[[:space:]]*" str;
+      # RegEx: Match any leading whitespace, possibly a '-', one or more digits,
+      # and finally match any trailing whitespace.
+      strippedInput = match "[[:space:]]*(-?[[:digit:]]+)[[:space:]]*" str;
 
       # RegEx: Match a leading '0' then one or more digits.
       isLeadingZero = match "0[[:digit:]]+" (head strippedInput) == [];
@@ -911,9 +900,10 @@ rec {
   */
   toIntBase10 = str:
     let
-      # RegEx: Match any leading whitespace, then match any zero padding, capture any remaining
-      # digits after that, and finally match any trailing whitespace.
-      strippedInput = match "[[:space:]]*0*([[:digit:]]+)[[:space:]]*" str;
+      # RegEx: Match any leading whitespace, then match any zero padding,
+      # capture possibly a '-' followed by one or more digits,
+      # and finally match any trailing whitespace.
+      strippedInput = match "[[:space:]]*0*(-?[[:digit:]]+)[[:space:]]*" str;
 
       # RegEx: Match at least one '0'.
       isZero = match "0+" (head strippedInput) == [];
