@@ -185,7 +185,7 @@ rec {
   */
   makeBinPath = makeSearchPathOutput "bin" "bin";
 
-  /* Normalize path, removing extranous /s
+  /* Normalize path, removing extraneous /s
 
      Type: normalizePath :: string -> string
 
@@ -281,7 +281,7 @@ rec {
        => [ ]
        stringToCharacters "abc"
        => [ "a" "b" "c" ]
-       stringToCharacters "💩"
+       stringToCharacters "🦄"
        => [ "�" "�" "�" "�" ]
   */
   stringToCharacters = s:
@@ -330,7 +330,7 @@ rec {
   */
   escape = list: replaceStrings list (map (c: "\\${c}") list);
 
-  /* Escape occurence of the element of `list` in `string` by
+  /* Escape occurrence of the element of `list` in `string` by
      converting to its ASCII value and prefixing it with \\x.
      Only works for printable ascii characters.
 
