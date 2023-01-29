@@ -558,6 +558,12 @@ in mkLicense lset) ({
     redistributable = false;
   };
 
+  fair = {
+    fullName = "Fair License";
+    spdxId = "Fair";
+    free = true;
+  };
+
   issl = {
     fullName = "Intel Simplified Software License";
     url = "https://software.intel.com/en-us/license/intel-simplified-software-license";
@@ -709,7 +715,12 @@ in mkLicense lset) ({
 
   ncsa = {
     spdxId = "NCSA";
-    fullName  = "University of Illinois/NCSA Open Source License";
+    fullName = "University of Illinois/NCSA Open Source License";
+  };
+
+  nlpl = {
+    spdxId = "NLPL";
+    fullName = "No Limit Public License";
   };
 
   nposl3 = {
