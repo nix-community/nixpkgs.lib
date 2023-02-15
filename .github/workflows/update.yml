@@ -33,6 +33,11 @@ jobs:
     - name: Procure git-filter-repo from nixpkgs
       run: "nix-env -i git-filter-repo -f '<nixpkgs>'"
 
+    - name: Filter nixpkgs on ./nixos/modules/misc
+      run: |
+        git clone ./nixpkgs nixpkgs-modules
+        cd ./nixpkgs-modules
+        git filter-repo --path nixos/modules/misc --force
 
     - name: Filter nixpkgs on ./lib
       run: |
@@ -43,10 +48,13 @@ jobs:
       run: |
         cd ./nixpkgs-lib
         git remote add other ../nixpkgs/
+        git remote add modules ../nixpkgs-modules/
         git fetch other master
+        git fetch modules master
         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git merge -X theirs --allow-unrelated-histories other/master
+        git merge -X theirs --allow-unrelated-histories modules/master
 
     - name: Push changes
       uses: ad-m/github-push-action@master
