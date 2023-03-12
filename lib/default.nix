@@ -100,7 +100,7 @@ let
       escapeShellArg escapeShellArgs
       isStorePath isStringLike
       isValidPosixName toShellVar toShellVars
-      escapeRegex escapeXML replaceChars lowerChars
+      escapeRegex escapeURL escapeXML replaceChars lowerChars
       upperChars toLower toUpper addContextFrom splitString
       removePrefix removeSuffix versionOlder versionAtLeast
       getName getVersion
@@ -145,11 +145,10 @@ let
       isOptionType mkOptionType;
     inherit (self.asserts)
       assertMsg assertOneOf;
-    inherit (self.debug) addErrorContextToAttrs traceIf traceVal traceValFn
-      traceXMLVal traceXMLValMarked traceSeq traceSeqN traceValSeq
-      traceValSeqFn traceValSeqN traceValSeqNFn traceFnSeqN traceShowVal
-      traceShowValMarked showVal traceCall traceCall2 traceCall3
-      traceValIfNot runTests testAllTrue traceCallXml attrNamesToStr;
+    inherit (self.debug) traceIf traceVal traceValFn
+      traceSeq traceSeqN traceValSeq
+      traceValSeqFn traceValSeqN traceValSeqNFn traceFnSeqN
+      runTests testAllTrue;
     inherit (self.misc) maybeEnv defaultMergeArg defaultMerge foldArgs
       maybeAttrNullable maybeAttr ifEnable checkFlag getValue
       checkReqs uniqList uniqListExt condConcat lazyGenericClosure
