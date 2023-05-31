@@ -12,16 +12,14 @@ jobs:
     steps:
 
     - name: Procure Nix
-      uses: cachix/install-nix-action@v13
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
+      uses: cachix/install-nix-action@v21
 
     - name: Checkout
       uses: actions/checkout@v2
       with:
         ref: master
         path: nixpkgs-lib
-    
+
     - name: Checkout nixpkgs repo
       uses: actions/checkout@v2
       with:
@@ -31,7 +29,7 @@ jobs:
         fetch-depth: 0 # complete history
 
     - name: Procure git-filter-repo from nixpkgs
-      run: "nix-env -i git-filter-repo -f '<nixpkgs>'"
+      run: "nix profile install nixpkgs#git-filter-repo"
 
 
     - name: Filter nixpkgs on ./lib
