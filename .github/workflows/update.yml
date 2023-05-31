@@ -31,7 +31,7 @@ jobs:
         fetch-depth: 0 # complete history
 
     - name: Procure git-filter-repo from nixpkgs
-      run: "nix-env -i git-filter-repo -f '<nixpkgs>'"
+      run: "nix profile install nixpkgs#git-filter-repo"
 
 
     - name: Filter nixpkgs on ./lib
