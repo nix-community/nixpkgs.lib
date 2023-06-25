@@ -1,7 +1,7 @@
 { lib }:
 
 lib.mapAttrs (lname: lset: let
-  defaultLicense = rec {
+  defaultLicense = {
     shortName = lname;
     free = true; # Most of our licenses are Free, explicitly declare unfree additions as such!
     deprecated = false;
@@ -96,6 +96,11 @@ in mkLicense lset) ({
   artistic1 = {
     spdxId = "Artistic-1.0";
     fullName = "Artistic License 1.0";
+  };
+
+  artistic1-cl8 = {
+    spdxId = "Artistic-1.0-cl8";
+    fullName = "Artistic License 1.0 w/clause 8";
   };
 
   artistic2 = {
@@ -295,9 +300,24 @@ in mkLicense lset) ({
     free = false;
   };
 
+  cc-by-sa-10 = {
+    spdxId = "CC-BY-SA-1.0";
+    fullName = "Creative Commons Attribution Share Alike 1.0";
+  };
+
+  cc-by-sa-20 = {
+    spdxId = "CC-BY-SA-2.0";
+    fullName = "Creative Commons Attribution Share Alike 2.0";
+  };
+
   cc-by-sa-25 = {
     spdxId = "CC-BY-SA-2.5";
     fullName = "Creative Commons Attribution Share Alike 2.5";
+  };
+
+  cc-by-10 = {
+    spdxId = "CC-BY-1.0";
+    fullName = "Creative Commons Attribution 1.0";
   };
 
   cc-by-30 = {
@@ -486,6 +506,16 @@ in mkLicense lset) ({
     url = "http://www.schristiancollins.com/generaluser.php"; # license included in sources
   };
 
+  gfl = {
+    fullName = "GUST Font License";
+    url = "http://www.gust.org.pl/fonts/licenses/GUST-FONT-LICENSE.txt";
+  };
+
+  gfsl = {
+    fullName = "GUST Font Source License";
+    url = "http://www.gust.org.pl/fonts/licenses/GUST-FONT-SOURCE-LICENSE.txt";
+  };
+
   gpl1Only = {
     spdxId = "GPL-1.0-only";
     fullName = "GNU General Public License v1.0 only";
@@ -626,6 +656,11 @@ in mkLicense lset) ({
     free = false;
   };
 
+  knuth = {
+    fullName = "Knuth CTAN License";
+    spdxId = "Knuth-CTAN";
+  };
+
   lal12 = {
     spdxId = "LAL-1.2";
     fullName = "Licence Art Libre 1.2";
@@ -702,9 +737,19 @@ in mkLicense lset) ({
     url = "https://opensource.franz.com/preamble.html";
   };
 
+  lppl1 = {
+    spdxId = "LPPL-1.0";
+    fullName = "LaTeX Project Public License v1.0";
+  };
+
   lppl12 = {
     spdxId = "LPPL-1.2";
     fullName = "LaTeX Project Public License v1.2";
+  };
+
+  lppl13a = {
+    spdxId = "LPPL-1.3a";
+    fullName = "LaTeX Project Public License v1.3a";
   };
 
   lppl13c = {
@@ -762,6 +807,12 @@ in mkLicense lset) ({
   mspl = {
     spdxId = "MS-PL";
     fullName = "Microsoft Public License";
+  };
+
+  mulan-psl2 = {
+    spdxId = "MulanPSL-2.0";
+    fullName = "Mulan Permissive Software License, Version 2";
+    url = "https://license.coscl.org.cn/MulanPSL2";
   };
 
   nasa13 = {
