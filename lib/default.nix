@@ -41,6 +41,7 @@ let
 
     # serialization
     cli = callLibs ./cli.nix;
+    gvariant = callLibs ./gvariant.nix;
     generators = callLibs ./generators.nix;
 
     # misc
@@ -54,6 +55,7 @@ let
     # Eval-time filesystem handling
     path = callLibs ./path;
     filesystem = callLibs ./filesystem.nix;
+    fileset = callLibs ./fileset;
     sources = callLibs ./sources.nix;
 
     # back-compat aliases
