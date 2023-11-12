@@ -3,8 +3,10 @@ let
 
   inherit (import ./internal.nix { inherit lib; })
     _coerce
+    _singleton
     _coerceMany
     _toSourceFilter
+    _fromSourceFilter
     _unionMany
     _fileFilter
     _printFileset
@@ -122,11 +124,10 @@ in {
       Paths in [strings](https://nixos.org/manual/nix/stable/language/values.html#type-string), including Nix store paths, cannot be passed as `root`.
       `root` has to be a directory.
 
-<!-- Ignore the indentation here, this is a nixdoc rendering bug that needs to be fixed: https://github.com/nix-community/nixdoc/issues/75 -->
-:::{.note}
-Changing `root` only affects the directory structure of the resulting store path, it does not change which files are added to the store.
-The only way to change which files get added to the store is by changing the `fileset` attribute.
-:::
+      :::{.note}
+      Changing `root` only affects the directory structure of the resulting store path, it does not change which files are added to the store.
+      The only way to change which files get added to the store is by changing the `fileset` attribute.
+      :::
     */
     root,
     /*
@@ -135,10 +136,9 @@ The only way to change which files get added to the store is by changing the `fi
       This argument can also be a path,
       which gets [implicitly coerced to a file set](#sec-fileset-path-coercion).
 
-<!-- Ignore the indentation here, this is a nixdoc rendering bug that needs to be fixed: https://github.com/nix-community/nixdoc/issues/75 -->
-:::{.note}
-If a directory does not recursively contain any file, it is omitted from the store path contents.
-:::
+      :::{.note}
+      If a directory does not recursively contain any file, it is omitted from the store path contents.
+      :::
 
     */
     fileset,
@@ -154,9 +154,14 @@ If a directory does not recursively contain any file, it is omitted from the sto
       sourceFilter = _toSourceFilter fileset;
     in
     if ! isPath root then
-      if isStringLike root then
+      if root ? _isLibCleanSourceWith then
         throw ''
-          lib.fileset.toSource: `root` ("${toString root}") is a string-like value, but it should be a path instead.
+          lib.fileset.toSource: `root` is a `lib.sources`-based value, but it should be a path instead.
+              To use a `lib.sources`-based value, convert it to a file set using `lib.fileset.fromSource` and pass it as `fileset`.
+              Note that this only works for sources created from paths.''
+      else if isStringLike root then
+        throw ''
+          lib.fileset.toSource: `root` (${toString root}) is a string-like value, but it should be a path instead.
               Paths in strings are not supported by `lib.fileset`, use `lib.sources` or derivations instead.''
       else
         throw ''
@@ -165,13 +170,13 @@ If a directory does not recursively contain any file, it is omitted from the sto
     # See also ../path/README.md
     else if ! fileset._internalIsEmptyWithoutBase && rootFilesystemRoot != filesetFilesystemRoot then
       throw ''
-        lib.fileset.toSource: Filesystem roots are not the same for `fileset` and `root` ("${toString root}"):
-            `root`: root "${toString rootFilesystemRoot}"
-            `fileset`: root "${toString filesetFilesystemRoot}"
-            Different roots are not supported.''
+        lib.fileset.toSource: Filesystem roots are not the same for `fileset` and `root` (${toString root}):
+            `root`: Filesystem root is "${toString rootFilesystemRoot}"
+            `fileset`: Filesystem root is "${toString filesetFilesystemRoot}"
+            Different filesystem roots are not supported.''
     else if ! pathExists root then
       throw ''
-        lib.fileset.toSource: `root` (${toString root}) does not exist.''
+        lib.fileset.toSource: `root` (${toString root}) is a path that does not exist.''
     else if pathType root != "directory" then
       throw ''
         lib.fileset.toSource: `root` (${toString root}) is a file, but it should be a directory instead. Potential solutions:
@@ -189,6 +194,75 @@ If a directory does not recursively contain any file, it is omitted from the sto
         src = root;
         filter = sourceFilter;
       };
+
+  /*
+  Create a file set with the same files as a `lib.sources`-based value.
+  This does not import any of the files into the store.
+
+  This can be used to gradually migrate from `lib.sources`-based filtering to `lib.fileset`.
+
+  A file set can be turned back into a source using [`toSource`](#function-library-lib.fileset.toSource).
+
+  :::{.note}
+  File sets cannot represent empty directories.
+  Turning the result of this function back into a source using `toSource` will therefore not preserve empty directories.
+  :::
+
+  Type:
+    fromSource :: SourceLike -> FileSet
+
+  Example:
+    # There's no cleanSource-like function for file sets yet,
+    # but we can just convert cleanSource to a file set and use it that way
+    toSource {
+      root = ./.;
+      fileset = fromSource (lib.sources.cleanSource ./.);
+    }
+
+    # Keeping a previous sourceByRegex (which could be migrated to `lib.fileset.unions`),
+    # but removing a subdirectory using file set functions
+    difference
+      (fromSource (lib.sources.sourceByRegex ./. [
+        "^README\.md$"
+        # This regex includes everything in ./doc
+        "^doc(/.*)?$"
+      ])
+      ./doc/generated
+
+    # Use cleanSource, but limit it to only include ./Makefile and files under ./src
+    intersection
+      (fromSource (lib.sources.cleanSource ./.))
+      (unions [
+        ./Makefile
+        ./src
+      ]);
+  */
+  fromSource = source:
+    let
+      # This function uses `._isLibCleanSourceWith`, `.origSrc` and `.filter`,
+      # which are technically internal to lib.sources,
+      # but we'll allow this since both libraries are in the same code base
+      # and this function is a bridge between them.
+      isFiltered = source ? _isLibCleanSourceWith;
+      path = if isFiltered then source.origSrc else source;
+    in
+    # We can only support sources created from paths
+    if ! isPath path then
+      if isStringLike path then
+        throw ''
+          lib.fileset.fromSource: The source origin of the argument is a string-like value ("${toString path}"), but it should be a path instead.
+              Sources created from paths in strings cannot be turned into file sets, use `lib.sources` or derivations instead.''
+      else
+        throw ''
+          lib.fileset.fromSource: The source origin of the argument is of type ${typeOf path}, but it should be a path instead.''
+    else if ! pathExists path then
+      throw ''
+        lib.fileset.fromSource: The source origin (${toString path}) of the argument does not exist.''
+    else if isFiltered then
+      _fromSourceFilter path source.filter
+    else
+      # If there's no filter, no need to run the expensive conversion, all subpaths will be included
+      _singleton path;
 
   /*
     The file set containing all files that are in either of two given file sets.
@@ -223,11 +297,11 @@ If a directory does not recursively contain any file, it is omitted from the sto
     _unionMany
       (_coerceMany "lib.fileset.union" [
         {
-          context = "first argument";
+          context = "First argument";
           value = fileset1;
         }
         {
-          context = "second argument";
+          context = "Second argument";
           value = fileset2;
         }
       ]);
@@ -269,12 +343,13 @@ If a directory does not recursively contain any file, it is omitted from the sto
     # which get [implicitly coerced to file sets](#sec-fileset-path-coercion).
     filesets:
     if ! isList filesets then
-      throw "lib.fileset.unions: Expected argument to be a list, but got a ${typeOf filesets}."
+      throw ''
+        lib.fileset.unions: Argument is of type ${typeOf filesets}, but it should be a list instead.''
     else
       pipe filesets [
         # Annotate the elements with context, used by _coerceMany for better errors
         (imap0 (i: el: {
-          context = "element ${toString i}";
+          context = "Element ${toString i}";
           value = el;
         }))
         (_coerceMany "lib.fileset.unions")
@@ -325,10 +400,11 @@ If a directory does not recursively contain any file, it is omitted from the sto
     # The file set to filter based on the predicate function
     fileset:
     if ! isFunction predicate then
-      throw "lib.fileset.fileFilter: Expected the first argument to be a function, but it's a ${typeOf predicate} instead."
+      throw ''
+        lib.fileset.fileFilter: First argument is of type ${typeOf predicate}, but it should be a function.''
     else
       _fileFilter predicate
-        (_coerce "lib.fileset.fileFilter: second argument" fileset);
+        (_coerce "lib.fileset.fileFilter: Second argument" fileset);
 
   /*
     The file set containing all files that are in both of two given file sets.
@@ -356,11 +432,11 @@ If a directory does not recursively contain any file, it is omitted from the sto
     let
       filesets = _coerceMany "lib.fileset.intersection" [
         {
-          context = "first argument";
+          context = "First argument";
           value = fileset1;
         }
         {
-          context = "second argument";
+          context = "Second argument";
           value = fileset2;
         }
       ];
@@ -408,11 +484,11 @@ If a directory does not recursively contain any file, it is omitted from the sto
     let
       filesets = _coerceMany "lib.fileset.difference" [
         {
-          context = "first argument (positive set)";
+          context = "First argument (positive set)";
           value = positive;
         }
         {
-          context = "second argument (negative set)";
+          context = "Second argument (negative set)";
           value = negative;
         }
       ];
@@ -456,7 +532,7 @@ If a directory does not recursively contain any file, it is omitted from the sto
     let
       # "fileset" would be a better name, but that would clash with the argument name,
       # and we cannot change that because of https://github.com/nix-community/nixdoc/issues/76
-      actualFileset = _coerce "lib.fileset.trace: argument" fileset;
+      actualFileset = _coerce "lib.fileset.trace: Argument" fileset;
     in
     seq
       (_printFileset actualFileset)
@@ -503,7 +579,7 @@ If a directory does not recursively contain any file, it is omitted from the sto
     let
       # "fileset" would be a better name, but that would clash with the argument name,
       # and we cannot change that because of https://github.com/nix-community/nixdoc/issues/76
-      actualFileset = _coerce "lib.fileset.traceVal: argument" fileset;
+      actualFileset = _coerce "lib.fileset.traceVal: Argument" fileset;
     in
     seq
       (_printFileset actualFileset)

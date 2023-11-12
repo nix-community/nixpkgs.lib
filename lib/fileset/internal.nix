@@ -7,7 +7,6 @@ let
     isString
     pathExists
     readDir
-    seq
     split
     trace
     typeOf
@@ -17,7 +16,6 @@ let
     attrNames
     attrValues
     mapAttrs
-    setAttrByPath
     zipAttrsWith
     ;
 
@@ -28,7 +26,6 @@ let
   inherit (lib.lists)
     all
     commonPrefix
-    drop
     elemAt
     filter
     findFirst
@@ -170,7 +167,12 @@ rec {
       else
         value
     else if ! isPath value then
-      if isStringLike value then
+      if value ? _isLibCleanSourceWith then
+        throw ''
+          ${context} is a `lib.sources`-based value, but it should be a file set or a path instead.
+              To convert a `lib.sources`-based value to a file set you can use `lib.fileset.fromSource`.
+              Note that this only works for sources created from paths.''
+      else if isStringLike value then
         throw ''
           ${context} ("${toString value}") is a string-like value, but it should be a file set or a path instead.
               Paths represented as strings are not supported by `lib.fileset`, use `lib.sources` or derivations instead.''
@@ -179,7 +181,7 @@ rec {
           ${context} is of type ${typeOf value}, but it should be a file set or a path instead.''
     else if ! pathExists value then
       throw ''
-        ${context} (${toString value}) does not exist.''
+        ${context} (${toString value}) is a path that does not exist.''
     else
       _singleton value;
 
@@ -208,9 +210,9 @@ rec {
     if firstWithBase != null && differentIndex != null then
       throw ''
         ${functionContext}: Filesystem roots are not the same:
-            ${(head list).context}: root "${toString firstBaseRoot}"
-            ${(elemAt list differentIndex).context}: root "${toString (elemAt filesets differentIndex)._internalBaseRoot}"
-            Different roots are not supported.''
+            ${(head list).context}: Filesystem root is "${toString firstBaseRoot}"
+            ${(elemAt list differentIndex).context}: Filesystem root is "${toString (elemAt filesets differentIndex)._internalBaseRoot}"
+            Different filesystem roots are not supported.''
     else
       filesets;
 
@@ -472,6 +474,59 @@ rec {
       empty
     else
       nonEmpty;
+
+  # Turn a builtins.filterSource-based source filter on a root path into a file set
+  # containing only files included by the filter.
+  # The filter is lazily called as necessary to determine whether paths are included
+  # Type: Path -> (String -> String -> Bool) -> fileset
+  _fromSourceFilter = root: sourceFilter:
+    let
+      # During the recursion we need to track both:
+      # - The path value such that we can safely call `readDir` on it
+      # - The path string value such that we can correctly call the `filter` with it
+      #
+      # While we could just recurse with the path value,
+      # this would then require converting it to a path string for every path,
+      # which is a fairly expensive operation
+
+      # Create a file set from a directory entry
+      fromDirEntry = path: pathString: type:
+        # The filter needs to run on the path as a string
+        if ! sourceFilter pathString type then
+          null
+        else if type == "directory" then
+          fromDir path pathString
+        else
+          type;
+
+      # Create a file set from a directory
+      fromDir = path: pathString:
+        mapAttrs
+          # This looks a bit funny, but we need both the path-based and the path string-based values
+          (name: fromDirEntry (path + "/${name}") (pathString + "/${name}"))
+          # We need to readDir on the path value, because reading on a path string
+          # would be unspecified if there are multiple filesystem roots
+          (readDir path);
+
+      rootPathType = pathType root;
+
+      # We need to convert the path to a string to imitate what builtins.path calls the filter function with.
+      # We don't want to rely on `toString` for this though because it's not very well defined, see ../path/README.md
+      # So instead we use `lib.path.splitRoot` to safely deconstruct the path into its filesystem root and subpath
+      # We don't need the filesystem root though, builtins.path doesn't expose that in any way to the filter.
+      # So we only need the components, which we then turn into a string as one would expect.
+      rootString = "/" + concatStringsSep "/" (components (splitRoot root).subpath);
+    in
+    if rootPathType == "directory" then
+      # We imitate builtins.path not calling the filter on the root path
+      _create root (fromDir root rootString)
+    else
+      # Direct files are always included by builtins.path without calling the filter
+      # But we need to lift up the base path to its parent to satisfy the base path invariant
+      _create (dirOf root)
+        {
+          ${baseNameOf root} = rootPathType;
+        };
 
   # Transforms the filesetTree of a file set to a shorter base path, e.g.
   # _shortenTreeBase [ "foo" ] (_create /foo/bar null)
