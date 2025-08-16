@@ -35,7 +35,7 @@ jobs:
     - name: Filter nixpkgs on ./lib
       run: |
         cd ./nixpkgs
-        git filter-repo --path lib --force
+        git filter-repo --path lib --path COPYING --force
 
     - name: Update nixpkgs.lib
       run: |
