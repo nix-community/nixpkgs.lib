@@ -12,16 +12,16 @@ jobs:
     steps:
 
     - name: Procure Nix
-      uses: cachix/install-nix-action@v21
+      uses: cachix/install-nix-action@v31
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
       with:
         ref: master
         path: nixpkgs-lib
 
     - name: Checkout nixpkgs repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
       with:
         ref: master
         repository: NixOS/nixpkgs
