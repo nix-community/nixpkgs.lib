@@ -1,55 +1,46 @@
-name: Update
+name: Update nixpkgs-lib
 
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '0 0 * * SUN' # every sunday
+    - cron: '0 0 * * SUN'
 
 jobs:
   update:
-    name: Pull in latest lib from Nixpkgs
     runs-on: ubuntu-latest
     steps:
 
-    - name: Procure Nix
-      uses: cachix/install-nix-action@v21
-
-    - name: Checkout
-      uses: actions/checkout@v2
+    - name: Checkout nixpkgs-lib
+      uses: actions/checkout@v5
       with:
-        ref: master
+        ref: ${{ github.ref_name }}
+        fetch-depth: 0
         path: nixpkgs-lib
 
-    - name: Checkout nixpkgs repo
-      uses: actions/checkout@v2
-      with:
-        ref: master
-        repository: NixOS/nixpkgs
-        path: nixpkgs
-        fetch-depth: 0 # complete history
-
-    - name: Procure git-filter-repo from nixpkgs
-      run: "nix profile install nixpkgs#git-filter-repo"
-
-
-    - name: Filter nixpkgs on ./lib
+    - name: Bare clone nixpkgs
       run: |
-        cd ./nixpkgs
-        git filter-repo --path lib --force
+        git clone --bare https://github.com/NixOS/nixpkgs.git nixpkgs.git
 
-    - name: Update nixpkgs.lib
+    - name: Install git-filter-repo
+      run: pip install --user git-filter-repo
+
+    - name: Filter nixpkgs for lib only
       run: |
-        cd ./nixpkgs-lib
-        git remote add other ../nixpkgs/
-        git fetch other master
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git merge -X theirs --allow-unrelated-histories other/master
+        cd nixpkgs.git
+        ~/.local/bin/git-filter-repo --path lib --force
+
+    - name: Merge lib updates into nixpkgs-lib
+      run: |
+        cd $GITHUB_WORKSPACE/nixpkgs-lib
+        git remote add upstream ../nixpkgs.git
+        git fetch upstream master
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git merge upstream/master --allow-unrelated-histories -X theirs
 
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         directory: nixpkgs-lib
-        branch: master
-
+        branch: ${{ github.ref_name }}
