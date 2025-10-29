@@ -63,7 +63,7 @@ let
       customisation = callLibs ./customisation.nix;
       derivations = callLibs ./derivations.nix;
       maintainers = import ../maintainers/maintainer-list.nix;
-      teams = callLibs ../maintainers/team-list.nix;
+      teams = callLibs ../maintainers/computed-team-list.nix;
       meta = callLibs ./meta.nix;
       versions = callLibs ./versions.nix;
 
@@ -127,6 +127,7 @@ let
         bitXor
         bitNot
         boolToString
+        boolToYesNo
         mergeAttrs
         flip
         defaultTo
@@ -206,7 +207,10 @@ let
         concatMapAttrs
         mapAttrsRecursive
         mapAttrsRecursiveCond
+        mapAttrsToListRecursive
+        mapAttrsToListRecursiveCond
         genAttrs
+        genAttrs'
         isDerivation
         toDerivation
         optionalAttrs
@@ -228,12 +232,9 @@ let
         getInclude
         getMan
         chooseDevOutputs
-        zipWithNames
-        zip
         recurseIntoAttrs
         dontRecurseIntoAttrs
         cartesianProduct
-        cartesianProductOfSets
         mapCartesianProduct
         updateManyAttrsByPath
         listToAttrs
@@ -287,6 +288,7 @@ let
         init
         crossLists
         unique
+        uniqueStrings
         allUnique
         intersectLists
         subtractLists
@@ -326,6 +328,7 @@ let
         hasInfix
         hasPrefix
         hasSuffix
+        join
         stringToCharacters
         stringAsChars
         escape
@@ -341,7 +344,6 @@ let
         escapeRegex
         escapeURL
         escapeXML
-        replaceChars
         lowerChars
         upperChars
         toLower
@@ -374,7 +376,6 @@ let
         fixedWidthNumber
         toInt
         toIntBase10
-        readPathsFromFile
         fileContents
         ;
       inherit (self.stringsWithDeps)
@@ -492,14 +493,12 @@ let
         optionAttrSetToDocList'
         scrubOptionValue
         literalExpression
-        literalExample
         showOption
         showOptionWithDefLocs
         showFiles
         unknownModule
         mkOption
         mkPackageOption
-        mkPackageOptionMD
         literalMD
         ;
       inherit (self.types)
@@ -547,7 +546,6 @@ let
         modifySumArgs
         innerClosePropagation
         closePropagation
-        mapAttrsFlatten
         nvs
         setAttr
         setAttrMerge
@@ -566,6 +564,9 @@ let
         ;
       inherit (self.versions)
         splitVersion
+        ;
+      inherit (self.network.ipv6)
+        mkEUI64Suffix
         ;
     }
   );
