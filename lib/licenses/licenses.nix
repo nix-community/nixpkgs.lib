@@ -21,6 +21,7 @@ let
         deprecated
         redistributable
         ;
+      licenseType = "simple";
     }
     // optionalAttrs (attrs ? spdxId) {
       inherit spdxId;
@@ -1492,6 +1493,11 @@ lib.mapAttrs mkLicense (
     unicodeTOU = {
       spdxId = "Unicode-TOU";
       fullName = "Unicode Terms of Use";
+    };
+
+    universalFOSSException-10 = {
+      spdxId = "Universal-FOSS-exception-1.0";
+      fullName = "Universal FOSS Exception, Version 1.0";
     };
 
     unlicense = {
