@@ -51,7 +51,6 @@ let
     filter
     filterAttrs
     fix
-    fold
     foldAttrs
     foldl
     foldl'
@@ -558,6 +557,10 @@ runTests {
       "c"
     ];
     expected = "a\nb\nc\n";
+  };
+  testConcatLinesEmpty = {
+    expr = concatLines [ ];
+    expected = "";
   };
 
   testMakeIncludePathWithPkgs = {
@@ -4790,7 +4793,7 @@ runTests {
   # for sub-directories
   testPackagesFromDirectoryNestedScopes =
     let
-      inherit (lib) makeScope recurseIntoAttrs;
+      inherit (lib) makeScope;
       emptyScope = makeScope lib.callPackageWith (_: { });
     in
     {
