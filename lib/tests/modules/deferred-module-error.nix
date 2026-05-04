@@ -1,7 +1,13 @@
 { config, lib, ... }:
 let
-  inherit (lib) types mkOption setDefaultModuleLocation evalModules;
-  inherit (types) deferredModule lazyAttrsOf submodule str raw enum;
+  inherit (lib)
+    types
+    mkOption
+    evalModules
+    ;
+  inherit (types)
+    deferredModule
+    ;
 in
 {
   options = {
@@ -13,7 +19,8 @@ in
     };
   };
   config = {
-    deferred = { ... }:
+    deferred =
+      { ... }:
       # this should be an attrset, so this fails
       true;
   };
