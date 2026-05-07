@@ -26,7 +26,6 @@ let
     ;
   inherit (lib.lists)
     concatLists
-    count
     elemAt
     filter
     foldl'
@@ -1085,14 +1084,14 @@ rec {
       merge =
         loc: defs:
         let
-          nrNulls = count (def: def.value == null) defs;
+          nulls = filter (def: def.value == null) defs;
         in
-        if nrNulls == length defs then
+        if nulls == [ ] then
+          elemType.merge loc defs
+        else if length nulls == length defs then
           null
-        else if nrNulls != 0 then
-          throw "The option `${showOption loc}` is defined both null and not null, in ${showFiles (getFiles defs)}."
         else
-          elemType.merge loc defs;
+          throw "The option `${showOption loc}` is defined both null and not null, in ${showFiles (getFiles defs)}.";
       emptyValue = {
         value = null;
       };
