@@ -1518,11 +1518,11 @@ rec {
           self: loc: defs:
           (self.v2 { inherit loc defs; }).value;
         v2 =
-          { loc, defs }:
+          { loc, defs }@args:
           let
             t1CheckedAndMerged =
               if t1.merge ? v2 then
-                checkV2MergeCoherence loc t1 (t1.merge.v2 { inherit loc defs; })
+                checkV2MergeCoherence loc t1 (t1.merge.v2 args)
               else
                 {
                   value = t1.merge loc defs;
@@ -1531,7 +1531,7 @@ rec {
                 };
             t2CheckedAndMerged =
               if t2.merge ? v2 then
-                checkV2MergeCoherence loc t2 (t2.merge.v2 { inherit loc defs; })
+                checkV2MergeCoherence loc t2 (t2.merge.v2 args)
               else
                 {
                   value = t2.merge loc defs;
@@ -1688,9 +1688,9 @@ rec {
             self: loc: defs:
             (self.v2 { inherit loc defs; }).value;
           v2 =
-            { loc, defs }:
+            { loc, defs }@args:
             let
-              orig = checkV2MergeCoherence loc elemType (elemType.merge.v2 { inherit loc defs; });
+              orig = checkV2MergeCoherence loc elemType (elemType.merge.v2 args);
               headError' = if orig.headError != null then orig.headError else checkDefsForError check loc defs;
             in
             orig
