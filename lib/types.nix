@@ -1617,19 +1617,15 @@ rec {
                 def
                 // {
                   value =
-                    let
-                      merged =
-                        if coercedType.merge ? v2 then
-                          checkV2MergeCoherence loc coercedType (
-                            coercedType.merge.v2 {
-                              inherit loc;
-                              defs = [ def ];
-                            }
-                          )
-                        else
-                          null;
-                    in
                     if coercedType.merge ? v2 then
+                      let
+                        merged = checkV2MergeCoherence loc coercedType (
+                          coercedType.merge.v2 {
+                            inherit loc;
+                            defs = [ def ];
+                          }
+                        );
+                      in
                       if merged.headError == null then coerceFunc def.value else def.value
                     else if coercedType.check def.value then
                       coerceFunc def.value
