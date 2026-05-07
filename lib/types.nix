@@ -6,6 +6,7 @@ let
   inherit (lib)
     elem
     flip
+    hasContext
     isAttrs
     isBool
     isDerivation
@@ -13,8 +14,9 @@ let
     isFunction
     isInt
     isList
-    isString
+    isPath
     isStorePath
+    isString
     throwIf
     toDerivation
     toList
@@ -653,10 +655,7 @@ rec {
       let
         res = mergeOneOption loc defs;
       in
-      if builtins.isPath res || (builtins.isString res && !builtins.hasContext res) then
-        toDerivation res
-      else
-        res;
+      if isPath res || (isString res && !hasContext res) then toDerivation res else res;
   };
 
   shellPackage = package // {
