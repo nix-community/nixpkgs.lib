@@ -1565,7 +1565,7 @@ rec {
       typeMerge =
         f':
         let
-          mt1 = t1.typeMerge (elemAt f'.payload.elemType 0).functor;
+          mt1 = t1.typeMerge (head f'.payload.elemType).functor;
           mt2 = t2.typeMerge (elemAt f'.payload.elemType 1).functor;
         in
         if (name == f'.name) && (mt1 != null) && (mt2 != null) then functor.type mt1 mt2 else null;
