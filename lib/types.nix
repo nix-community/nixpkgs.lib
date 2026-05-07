@@ -4,6 +4,7 @@
 
 let
   inherit (lib)
+    all
     elem
     flip
     hasContext
@@ -111,10 +112,15 @@ let
 
   checkDefsForError =
     check: loc: defs:
-    let
-      invalidDefs = filter (def: !check def.value) defs;
-    in
-    if invalidDefs != [ ] then { message = "Definition values: ${showDefs invalidDefs}"; } else null;
+    if all (def: check def.value) defs then
+      null
+    else
+      let
+        invalidDefs = filter (def: !check def.value) defs;
+      in
+      {
+        message = "Definition values: ${showDefs invalidDefs}";
+      };
 
   # Check that a type with v2 merge has a coherent check attribute.
   # Throws an error if the type uses an ad-hoc `type // { check }` override.
