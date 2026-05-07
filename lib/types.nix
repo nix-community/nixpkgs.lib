@@ -8,6 +8,7 @@ let
     elem
     flip
     hasContext
+    functionArgs
     isAttrs
     isBool
     isDerivation
@@ -1115,9 +1116,7 @@ rec {
       check = isFunction;
       merge = loc: defs: {
         # An argument attribute has a default when it has a default in all definitions
-        __functionArgs = lib.zipAttrsWith (_: lib.all (x: x)) (
-          lib.map (fn: lib.functionArgs fn.value) defs
-        );
+        __functionArgs = zipAttrsWith (_: all (x: x)) (map (fn: functionArgs fn.value) defs);
         __functor =
           _: callerArgs:
           (mergeDefinitions (loc ++ [ "<function body>" ]) elemType (
