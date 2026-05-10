@@ -263,6 +263,11 @@ lib.mapAttrs mkLicense (
       fullName = "Lawrence Berkeley National Labs BSD variant license";
     };
 
+    bsd3Modification = {
+      spdxId = "BSD-3-Clause-Modification";
+      fullName = "BSD 3-Clause Modification";
+    };
+
     bsd3ClauseTso = {
       spdxId = "BSD-3-Clause-Tso";
       fullName = "BSD 3-Clause Tso variant";
@@ -520,6 +525,11 @@ lib.mapAttrs mkLicense (
     doc = {
       spdxId = "DOC";
       fullName = "DOC License";
+    };
+
+    docBookDtd = {
+      spdxId = "DocBook-DTD";
+      fullName = "DocBook DTD License";
     };
 
     drl10 = {
@@ -1067,6 +1077,11 @@ lib.mapAttrs mkLicense (
       fullName = "MIT Open Group variant";
     };
 
+    mpich2 = {
+      spdxId = "mpich2";
+      fullName = "mpich2 License";
+    };
+
     mpl10 = {
       spdxId = "MPL-1.0";
       fullName = "Mozilla Public License 1.0";
@@ -1548,6 +1563,11 @@ lib.mapAttrs mkLicense (
     w3c = {
       spdxId = "W3C";
       fullName = "W3C Software Notice and License";
+    };
+
+    w3c-19980720 = {
+      spdxId = "W3C-19980720";
+      fullName = "W3C Software Notice and License (1998-07-20)";
     };
 
     wadalab = {
