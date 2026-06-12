@@ -24,10 +24,10 @@ jobs:
     - name: Install git-filter-repo
       run: pip install --user git-filter-repo
 
-    - name: Filter nixpkgs for lib only
+    - name: Filter nixpkgs
       run: |
         cd nixpkgs.git
-        ~/.local/bin/git-filter-repo --path lib --path COPYING --force
+        ~/.local/bin/git-filter-repo --path lib --path maintainers --path COPYING --force
 
     - name: Merge lib updates into nixpkgs-lib
       run: |
