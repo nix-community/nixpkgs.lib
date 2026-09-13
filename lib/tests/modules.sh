@@ -745,6 +745,9 @@ checkConfigOutput '^38|27$' options.submoduleLine38.declarationPositions.1.line 
 # nested options work
 checkConfigOutput '^34$' options.nested.nestedLine34.declarationPositions.0.line ./declaration-positions.nix
 
+# types.pathWith in-module assertions
+checkConfigOutput '"ok"' config.assertionsResult ./pathWith.nix
+
 # types.pathWith { inStore = true; }
 checkConfigOutput '".*/store/0lz9p8xhf89kb1c1kk6jxrzskaiygnlh-bash-5.2-p15.drv"' config.pathInStore.ok1 ./pathWith.nix
 checkConfigOutput '".*/store/0fb3ykw9r5hpayd05sr0cizwadzq1d8q-bash-5.2-p15"' config.pathInStore.ok2 ./pathWith.nix
